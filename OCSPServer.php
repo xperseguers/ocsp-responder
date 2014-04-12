@@ -1,4 +1,4 @@
-<?
+<?php
 error_reporting(E_ALL);
 require('PKIX/OCSP/OCSPMessage.php');
 require('PKIX/OCSP/Store.php');

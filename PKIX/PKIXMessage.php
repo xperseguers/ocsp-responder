@@ -1,4 +1,4 @@
-<?
+<?php
 /* 
  * PKIX ASN.1 Message - Abstract class for manipulating ASN.1 messages.
  * Also provides functions for exchanging these messages over HTTP.

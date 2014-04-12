@@ -1,4 +1,4 @@
-<?
+<?php
 /* 
  * PHP OCSPRequest - OCSP Request access library for PHP
  *

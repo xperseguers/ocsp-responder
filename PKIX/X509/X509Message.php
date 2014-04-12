@@ -1,4 +1,4 @@
-<?
+<?php
 namespace PKIX\X509 {
   require_once ('PKIX/PKIXMessage.php');
 

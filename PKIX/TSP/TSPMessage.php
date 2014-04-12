@@ -1,4 +1,4 @@
-<?
+<?php
 namespace PKIX\TSP {
   require_once('PKIX/PKIXMessage.php');
 
