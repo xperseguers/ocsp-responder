@@ -5,7 +5,7 @@
  */
 
 namespace PKIX\ASN1 {
-  require_once('ASN1/asn.php');
+  require_once(__DIR__ . '/../ASN1/asn.php');
   \ASN1\ASN1::load();
 
   /**

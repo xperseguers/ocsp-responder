@@ -1,0 +1,3 @@
+[submodule "ASN1"]
+	path = ASN1
+	url = https://github.com/NuclearDog/PHP-ASN.1.git
