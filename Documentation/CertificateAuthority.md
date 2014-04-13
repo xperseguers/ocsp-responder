@@ -305,6 +305,12 @@ for the Common Name (CN) on it. The filename is the index plus the extension ``.
 	Revoking Certificate 02.
 	Data Base Updated
 
+We need to regenerate the list of revoked certificates:
+
+	# openssl ca -gencrl -config ./openssl.cnf -crlexts crl_ext -out private/carevok.crl
+
+File ``carevok.crl`` should be published to the url defined as ``nsCaRevocationUrl`` in ``openssl.cnf``.
+
 
 Renewing Certificates
 ---------------------
@@ -326,13 +332,109 @@ You cannot issue two certificates with the same Common Name, which is why the ex
 To revoke a certificate:
 
 	# openssl ca -revoke newcerts/02.pem -config ./openssl.cnf
-	Using configuration from ./openssl.cnf
-	Enter PEM pass phrase:
-	Revoking Certificate 02.
-	Data Base Updated
+	# openssl ca -gencrl -config ./openssl.cnf -crlexts crl_ext -out private/carevok.crl
 
 Now that the certificate has been revoked, you can re-sign the original request, or create and sign a new one as
 described above.
+
+
+OCSP Server
+-----------
+
+### Creating a Certificate for the OCSP Server
+
+In our ``openssl.cnf``, in section ``[ usr_cert ]`` we had
+
+	authorityInfoAccess          = OCSP;URI:http://<uri to server>
+
+For this example, the OCSP server will be running on localhost on port 8888, so the authorityInfoAccess line will look
+like:
+
+	authorityInfoAccess          = OCSP;URI:http://localhost:8888
+
+This line will add a new attribute to issued certs that tells clients where the CA’s OCSP server is located so it can
+check the validity of the cert. The new v3 template assigns a neccesary attribute “OCSPSigning” to any certificate
+issued under this template. We will need to issue an OCSP signing certificate to the OCSP server with the OCSPSigning
+attribute, otherwise signature verification will fail when a cert is being checked. This is the first thing we will do:
+
+	# openssl req -new -nodes -out localhost-ocsp.csr -keyout localhost-ocsp.key -config ./openssl.cnf -extensions v3_OCSP
+
+Sign the request with the CA signing key:
+
+	# openssl ca -out localhost-ocsp.crt -config ./openssl.cnf -extensions v3_OCSP -infiles localhost-ocsp.csr
+
+OpenSSL should show the signing request, look for this in the X509v3 extensions:
+
+	X509v3 Extended Key Usage:
+	OCSP Signing
+
+
+### Testing with a dumb Certificate
+
+Now, issue a throwaway cert and sign it:
+
+	# openssl req -new -nodes -out dummy.csr -keyout dummy.key -config ./openssl.cnf
+	# openssl ca -out dummy.crt -config ./openssl.cnf -infiles dummy.csr
+
+Next, start up the OCSP server.
+
+	# openssl ocsp -index ./index.txt -port 8888 -rsigner localhost-ocsp.crt -rkey localhost-ocsp.key -CA cacert.pem -text -out log.txt
+
+Once the dummy certificate has been been issued and the OCSP server started, we can test the cert using the
+``openssl ocsp`` command. To verify a certificate with OpenSSL, the command syntax is:
+
+	# openssl ocsp -CAfile <cafile pem> -issuer <issuing ca pem> -cert <certificate to check> -url <url to OCSP server> -resp_text
+
+So to test our dummy file:
+
+	# openssl ocsp -CAfile cacert.pem -issuer cacert.pem -cert dummy.crt -url http://localhost:8888 -resp_text
+
+There’s going to be a large block of text flooding the screen. Some of the more important text:
+
+	OCSP Response Status: successful (0×0)
+	Response Type: Basic OCSP Response
+	…
+	Certificate ID:
+	  Hash Algorithm: sha1
+	  Issuer Name Hash: 2AE2A2CC0943C03E97144A9C3C1D6B74E4E288DB
+	  Issuer Key Hash: B2195394933FB42A2C08EF0B1002307C9B4C7D31
+	  Serial Number: 05
+	Cert Status: good
+	…
+	Response verify OK
+	dummy.crt: good
+	    This Update: Apr 13 15:44:13 2014 GMT
+
+Now revoke the certificate and regenerate the CRL:
+
+	# openssl ca -revoke newcerts/05.pem -config ./openssl.cnf
+	# openssl ca -gencrl -config ./openssl.cnf -crlexts crl_ext -out private/carevok.crl
+
+Make sure to restart the OCSP server (the server must be restarted every time a certificate is issued or revoked). If
+the OCSP signing certificate was not issued with the OCSPSigning attribute, OpenSSL will gripe that the verification did
+not work properly. Reissue the signing cert with the OCSPSigning attribute for the server.
+
+Now we can verify the certificate again:
+
+	# openssl ocsp -CAfile cacert.pem -issuer cacert.pem -cert dummy.crt -url http://localhost:8888 -resp_text
+
+	OCSP Response Status: successful (0×0)
+	Response Type: Basic OCSP Response
+	…
+	Certificate ID:
+	  Hash Algorithm: sha1
+	  Issuer Name Hash: 2AE2A2CC0943C03E97144A9C3C1D6B74E4E288DB
+	  Issuer Key Hash: B2195394933FB42A2C08EF0B1002307C9B4C7D31
+	  Serial Number: 05
+	Cert Status: revoked
+	Revocation Time: Apr 13 15:58:56 2014 GMT
+	This Update: Apr 13 16:01:44 2014 GMT
+	…
+	Response verify OK
+	dummy.crt: revoked
+	    This Update: Apr 13 16:01:44 2014 GMT
+	    Revocation Time: Apr 13 15:58:56 2014 GMT
+
 
 Sources:
 
