@@ -1,6 +1,6 @@
 How to set up OCSP using OpenSSL
 ================================
-<!--  -->
+
 Assuming that you already have an OpenSSL Certificate Authority set up, you will need to make a couple of changes to your openssl.cnf file. Add a new line to the usr_cert stanza
 
 	[ usr_cert ]
