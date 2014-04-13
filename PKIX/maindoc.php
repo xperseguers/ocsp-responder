@@ -21,9 +21,6 @@
  *
  * - OCSP (RFC2560, RFC5019) \link PKIX::OCSP::Request request
  *    \endlink and \link PKIX::OCSP::Response response\endlink
-
  * - TSP (RFC3161) \link PKIX::TSP::Request request\endlink and \link
  *     PKIX::TSP::Response response\endlink
  */
-
-?>
