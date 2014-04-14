@@ -150,7 +150,7 @@ own in this directory. Start your editor (vi, pico, ...) and create ``openssl.cn
 	authorityKeyIdentifier       = keyid,issuer:always
 	authorityInfoAccess          = OCSP;URI:http://<uri to server>
 	authorityInfoAccess          = caIssuers;URI:http://<uri to server>/ca.html
-	nsCaRevocationUrl            = http://<uri to server>/revok.crl
+	nsCaRevocationUrl            = http://<uri to server>/carevok.crl
 
 
 In order to protect ourselves from unauthorized use of our CA certificate, it is passphrase protected. Each time you use
@@ -174,7 +174,7 @@ all certificates signed with the expired one must be revoked, and re-signed with
 work, you want to make your root certificate valid for as long as you think you will need it. In this example, we are
 making it valid for ten years.)_
 
-Run the command as shown. In this case, the PEM pass prhase it asks for is a new one, which you must enter twice:
+Run the command as shown. In this case, the PEM pass phrase it asks for is a new one, which you must enter twice:
 
 	# openssl req -new -x509 -extensions v3_ca -keyout private/cakey.pem \
 	-out cacert.pem -days 3650 -config ./openssl.cnf
